@@ -108,13 +108,39 @@ st.markdown("""
 
 @st.cache_data
 def load_hospital_data():
-    """Load and cache hospital data."""
-    file_path = "/Users/heilman/Desktop/All Data July 2025.sas7bdat"
+    """Load and cache hospital data from Supabase or return None for file upload."""
     try:
-        df_original, df_std, national_stats = load_data(file_path)
-        return df_original, df_std, national_stats, None
+        # Try to load from Supabase if configured
+        if 'SUPABASE_URL' in st.secrets and 'SUPABASE_KEY' in st.secrets:
+            from supabase import create_client
+            import tempfile
+
+            supabase = create_client(st.secrets['SUPABASE_URL'], st.secrets['SUPABASE_KEY'])
+
+            # Download file from Supabase storage
+            bucket_name = st.secrets.get('SUPABASE_BUCKET', 'hospital-data')
+            file_name = st.secrets.get('SUPABASE_FILE', 'All Data July 2025.sas7bdat')
+
+            # Download to temporary file
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.sas7bdat') as tmp_file:
+                data = supabase.storage.from_(bucket_name).download(file_name)
+                tmp_file.write(data)
+                tmp_path = tmp_file.name
+
+            # Load data from temp file
+            df_original, df_std, national_stats = load_data(tmp_path)
+
+            # Clean up temp file
+            import os
+            os.unlink(tmp_path)
+
+            return df_original, df_std, national_stats, None
     except Exception as e:
-        return None, None, None, str(e)
+        # Supabase not configured or failed - return None to prompt for upload
+        return None, None, None, None
+
+    # No Supabase configured
+    return None, None, None, None
 
 # ============================================================================
 # HELPER FUNCTIONS
@@ -351,14 +377,40 @@ def main():
     with st.spinner("Loading hospital data..."):
         df_original, df_std, national_stats, error = load_hospital_data()
 
-    if error:
-        st.error(f"❌ Error loading data: {error}")
-        st.info("Please ensure the file 'All Data July 2025.sas7bdat' is in your Desktop folder.")
-        return
-
     if df_original is None:
-        st.error("❌ Failed to load hospital data.")
-        return
+        st.info("📁 **No demo data configured.** Please upload your hospital quality data file to get started.")
+        st.markdown("---")
+        st.markdown("### Upload Hospital Data")
+        st.markdown("Upload your CMS Star Rating data file (Excel, CSV, or SAS format):")
+        uploaded_file = st.file_uploader("Choose a file", type=['xlsx', 'xls', 'csv', 'sas7bdat'], key="hospital_upload")
+
+        if uploaded_file is not None:
+            with st.spinner("Processing uploaded file..."):
+                try:
+                    # Save uploaded file temporarily
+                    import tempfile
+                    import os
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[1]) as tmp_file:
+                        tmp_file.write(uploaded_file.getvalue())
+                        tmp_path = tmp_file.name
+
+                    # Load data
+                    df_original, df_std, national_stats = load_data(tmp_path)
+
+                    # Clean up
+                    os.unlink(tmp_path)
+
+                    st.success("✅ Data loaded successfully!")
+                except Exception as e:
+                    st.error(f"❌ Error loading file: {str(e)}")
+                    return
+        else:
+            st.info("👆 Upload a file to begin analysis")
+            return
+
+        if df_original is None:
+            st.error("❌ Failed to load hospital data from uploaded file.")
+            return
 
     # Sidebar
     with st.sidebar:
