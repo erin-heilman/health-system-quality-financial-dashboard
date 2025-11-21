@@ -108,41 +108,7 @@ st.markdown("""
 
 @st.cache_data
 def load_hospital_data():
-    """Load and cache hospital data from Supabase database or return None for file upload."""
-    try:
-        # Try to load from Supabase if configured
-        if 'SUPABASE_URL' in st.secrets and 'SUPABASE_KEY' in st.secrets:
-            from supabase import create_client
-            from star_rating_calculator import standardize_measures, standardize_group_scores
-
-            supabase = create_client(st.secrets['SUPABASE_URL'], st.secrets['SUPABASE_KEY'])
-
-            # Query data from Supabase table
-            response = supabase.table('star_rating_database').select('*').execute()
-
-            if response.data:
-                # Convert to DataFrame
-                df = pd.DataFrame(response.data)
-
-                # Remove the 'id' column if it exists (added by Supabase)
-                if 'id' in df.columns:
-                    df = df.drop('id', axis=1)
-
-                # Standardize measures
-                df_std, national_stats = standardize_measures(df)
-
-                # Calculate and standardize group scores
-                df_with_groups = standardize_group_scores(df_std)
-
-                return df, df_with_groups, national_stats, None
-            else:
-                return None, None, None, None
-
-    except Exception as e:
-        # Supabase not configured or failed - return None to prompt for upload
-        return None, None, None, None
-
-    # No Supabase configured
+    """Return None to always require file upload."""
     return None, None, None, None
 
 # ============================================================================
