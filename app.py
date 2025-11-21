@@ -108,33 +108,36 @@ st.markdown("""
 
 @st.cache_data
 def load_hospital_data():
-    """Load and cache hospital data from Supabase or return None for file upload."""
+    """Load and cache hospital data from Supabase database or return None for file upload."""
     try:
         # Try to load from Supabase if configured
         if 'SUPABASE_URL' in st.secrets and 'SUPABASE_KEY' in st.secrets:
             from supabase import create_client
-            import tempfile
+            from star_rating_calculator import standardize_measures, standardize_group_scores
 
             supabase = create_client(st.secrets['SUPABASE_URL'], st.secrets['SUPABASE_KEY'])
 
-            # Download file from Supabase storage
-            bucket_name = st.secrets.get('SUPABASE_BUCKET', 'hospital-data')
-            file_name = st.secrets.get('SUPABASE_FILE', 'All Data July 2025.sas7bdat')
+            # Query data from Supabase table
+            response = supabase.table('hospital_quality_data').select('*').execute()
 
-            # Download to temporary file
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.sas7bdat') as tmp_file:
-                data = supabase.storage.from_(bucket_name).download(file_name)
-                tmp_file.write(data)
-                tmp_path = tmp_file.name
+            if response.data:
+                # Convert to DataFrame
+                df = pd.DataFrame(response.data)
 
-            # Load data from temp file
-            df_original, df_std, national_stats = load_data(tmp_path)
+                # Remove the 'id' column if it exists (added by Supabase)
+                if 'id' in df.columns:
+                    df = df.drop('id', axis=1)
 
-            # Clean up temp file
-            import os
-            os.unlink(tmp_path)
+                # Standardize measures
+                df_std, national_stats = standardize_measures(df)
 
-            return df_original, df_std, national_stats, None
+                # Calculate and standardize group scores
+                df_with_groups = standardize_group_scores(df_std)
+
+                return df, df_with_groups, national_stats, None
+            else:
+                return None, None, None, None
+
     except Exception as e:
         # Supabase not configured or failed - return None to prompt for upload
         return None, None, None, None
