@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv
+*.egg-info/
+dist/
+build/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Data files (exclude sensitive data)
+*.xlsx
+*.xls
+*.csv
+*.sas7bdat
+*.dta
+
+# Test files
+test_*.py
+*_test.py
+debug_*.py
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+
+# Other
+cms_perinatal_test/
+future_readiness_assessment.py
+readiness_ui_components.py
