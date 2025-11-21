@@ -1,6 +1,6 @@
-# CMS Hospital Star Rating Calculator
+# Health System Quality & Financial Analysis Dashboard
 
-An integrated quality and financial assessment tool for hospital systems, analyzing performance across CMS Star Ratings, HVBP, HRRP, and HACRP programs.
+A comprehensive quality and financial assessment platform for hospital systems, providing integrated analysis across CMS Star Ratings, Hospital Value-Based Purchasing (HVBP), Hospital Readmissions Reduction Program (HRRP), and Hospital-Acquired Condition Reduction Program (HACRP).
 
 ## Features
 
